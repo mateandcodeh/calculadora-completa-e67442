@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Súper Calculadora</title>
+  <style>
+    :root {
+      --primary: #2E7D32;
+      --primary-light: #4CAF50;
+      --bg: #000000;
+      --card: #0d0d0d;
+      --text: #212121;
+      --danger: #d32f2f;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 14px 16px;
+      font-size: 1.2rem;
+      font-weight: 600;
+      text-align: center;
+    }
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      padding-bottom: 80px;
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Calculadora científica */
+    .display {
+      background: #1a1a1a;
+      color: #4CAF50;
+      font-size: 2.4rem;
+      font-weight: 700;
+      text-align: right;
+      padding: 20px 16px;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      min-height: 80px;
+      word-break: break-all;
+    }
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .btn {
+      padding: 18px 0;
+      font-size: 1.15rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 12px;
+      background: #e0e0e0;
+      color: #212121;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+    .btn:active { transform: scale(0.96); }
+    .btn.op { background: var(--primary); color: white; }
+    .btn.clear { background: var(--danger); color: white; }
+    .btn.eq { background: var(--primary-light); color: white; }
+
+    /* Formularios */
+    .card {
+      background: var(--card);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .card h3 {
+      margin-bottom: 12px;
+      color: var(--primary);
+      font-size: 1.1rem;
+    }
+    label {
+      display: block;
+      font-size: 0.9rem;
+      margin: 10px 0 4px;
+      color: #555;
+    }
+    input, select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      font-size: 1rem;
+      margin-bottom: 8px;
+    }
+    .btn-calc {
+      width: 100%;
+      padding: 14px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-top: 12px;
+      cursor: pointer;
+    }
+    .resultado {
+      background: #e8f5e9;
+      border-left: 5px solid var(--primary);
+      padding: 14px;
+      border-radius: 10px;
+      margin-top: 14px;
+      white-space: pre-line;
+      font-size: 1rem;
+      line-height: 1.5;
+    }
+    .tabs-inner {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 14px;
+      overflow-x: auto;
+    }
+    .tab-btn {
+      flex-shrink: 0;
+      padding: 8px 14px;
+      border-radius: 20px;
+      border: none;
+      background: #e0e0e0;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+    .tab-btn.active {
+      background: var(--primary);
+      color: white;
+    }
+
+    /* Navegación inferior */
+    nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      display: flex;
+      border-top: 1px solid #ddd;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.08);
+      z-index: 100;
+    }
+    .nav-item {
+      flex: 1;
+      text-align: center;
+      padding: 10px 0 8px;
+      font-size: 0.72rem;
+      color: #666;
+      cursor: pointer;
+    }
+    .nav-item.active { color: var(--primary); font-weight: 600; }
+    .nav-item span { display: block; font-size: 1.4rem; margin-bottom: 2px; }
+  </style>
+<style id="lf-tema">html,body{background:#000000 !important;color:#f2f2f2 !important}</style></head>
+<body>
+
+<header>Súper Calculadora</header>
+
+<div class="content">
+  <!-- CIENTÍFICA -->
+  <div id="cientifica" class="tab-content active">
+    <div class="display" id="display">0</div>
+    <div class="buttons" id="calc-buttons"></div>
+  </div>
+
+  <!-- FÍSICA -->
+  <div id="fisica" class="tab-content">
+    <div class="tabs-inner">
+      <button class="tab-btn active" onclick="showFisica(0)">Cinemática</button>
+      <button class="tab-btn" onclick="showFisica(1)">Energía</button>
+      <button class="tab-btn" onclick="showFisica(2)">Electricidad</button>
+      <button class="tab-btn" onclick="showFisica(3)">Ondas</button>
+    </div>
+
+    <div id="fisica-0" class="card">
+      <h3>v = v₀ + a·t</h3>
+      <label>Velocidad inicial (m/s)</label>
+      <input type="number" id="v0">
+      <label>Aceleración (m/s²)</label>
+      <input type="number" id="a">
+      <label>Tiempo (s)</label>
+      <input type="number" id="t">
+      <button class="btn-calc" onclick="calcCinematica()">Calcular</button>
+      <div class="resultado" id="res-cin" style="display:none"></div>
+    </div>
+
+    <div id="fisica-1" class="card" style="display:none">
+      <h3>Energía Cinética y Potencial</h3>
+      <label>Masa (kg)</label>
+      <input type="number" id="masa">
+      <label>Velocidad (m/s)</label>
+      <input type="number" id="vel">
+      <label>Altura (m)</label>
+      <input type="number" id="altura">
+      <button class="btn-calc" onclick="calcEnergia()">Calcular</button>
+      <div class="resultado" id="res-ene" style="display:none"></div>
+    </div>
+
+    <div id="fisica-2" class="card" style="display:none">
+      <h3>Ley de Ohm + Potencia</h3>
+      <label>Voltaje (V)</label>
+      <input type="number" id="volt">
+      <label>Resistencia (Ω)</label>
+      <input type="number" id="resis">
+      <button class="btn-calc" onclick="calcOhm()">Calcular</button>
+      <div class="resultado" id="res-ohm" style="display:none"></div>
+    </div>
+
+    <div id="fisica-3" class="card" style="display:none">
+      <h3>v = f · λ</h3>
+      <label>Frecuencia (Hz)</label>
+      <input type="number" id="freq">
+      <label>Longitud de onda (m)</label>
+      <input type="number" id="lambda">
+      <button class="btn-calc" onclick="calcOnda()">Calcular</button>
+      <div class="resultado" id="res-onda" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- QUÍMICA -->
+  <div id="quimica" class="tab-content">
+    <div class="tabs-inner">
+      <button class="tab-btn active" onclick="showQuimica(0)">Molaridad</button>
+      <button class="tab-btn" onclick="showQuimica(1)">Gases Ideales</button>
+      <button class="tab-btn" onclick="showQuimica(2)">pH</button>
+    </div>
+
+    <div id="quim-0" class="card">
+      <h3>M = n / V</h3>
+      <label>Moles (mol)</label>
+      <input type="number" id="moles">
+      <label>Volumen (L)</label>
+      <input type="number" id="volumen">
+      <button class="btn-calc" onclick="calcMolaridad()">Calcular</button>
+      <div class="resultado" id="res-mol" style="display:none"></div>
+    </div>
+
+    <div id="quim-1" class="card" style="display:none">
+      <h3>PV = nRT (R = 0.0821)</h3>
+      <label>Presión (atm)</label>
+      <input type="number" id="p">
+      <label>Volumen (L)</label>
+      <input type="number" id="vgas">
+      <label>Moles</label>
+      <input type="number" id="ngas">
+      <label>Temperatura (K)</label>
+      <input type="number" id="temp">
+      <button class="btn-calc" onclick="calcGases()">Calcular (dejá 1 vacío)</button>
+      <div class="resultado" id="res-gas" style="display:none"></div>
+    </div>
+
+    <div id="quim-2" class="card" style="display:none">
+      <h3>pH = -log[H⁺]</h3>
+      <label>[H⁺] (mol/L)</label>
+      <input type="number" id="hplus" step="any">
+      <button class="btn-calc" onclick="calcPH()">Calcular</button>
+      <div class="resultado" id="res-ph" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- SOLAR -->
+  <div id="solar" class="tab-content">
+    <div class="card">
+      <h3>Dimensionamiento Solar</h3>
+      <label>Consumo diario (kWh/día)</label>
+      <input type="number" id="consumo" step="0.1">
+      <label>Horas Sol Pico (HSP)</label>
+      <input type="number" id="hsp" value="4.5" step="0.1">
+      <label>Potencia del panel (W)</label>
+      <input type="number" id="potpanel" value="450">
+      <label>Días de autonomía</label>
+      <input type="number" id="autonomia" value="2">
+      <label>Profundidad de descarga (%)</label>
+      <input type="number" id="dod" value="50">
+      <label>Tensión del sistema (V)</label>
+      <input type="number" id="tension" value="48">
+      <button class="btn-calc" onclick="calcSolar()">Calcular Sistema</button>
+      <div class="resultado" id="res-solar" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- MOTORES -->
+  <div id="motores" class="tab-content">
+    <div class="card">
+      <h3>Diseño de Motor Eléctrico</h3>
+      <label>Tipo de vehículo</label>
+      <select id="tipo">
+        <option value="0">Monopatín</option>
+        <option value="1">Bici / Moto</option>
+        <option value="2">Auto</option>
+        <option value="3">Camión</option>
+        <option value="4">Tren</option>
+      </select>
+      <label>Peso total (kg)</label>
+      <input type="number" id="peso">
+      <label>Velocidad máxima (km/h)</label>
+      <input type="number" id="velmax">
+      <label>Aceleración deseada (m/s²)</label>
+      <input type="number" id="acel" value="1.5" step="0.1">
+      <label>Pendiente máxima (%)</label>
+      <input type="number" id="pend" value="0">
+      <label>Eficiencia del sistema (%)</label>
+      <input type="number" id="efic" value="85">
+      <button class="btn-calc" onclick="calcMotor()">Calcular Motor</button>
+      <div class="resultado" id="res-motor" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Navegación inferior -->
+<nav>
+  <div class="nav-item active" onclick="showTab('cientifica')">
+    <span>🧮</span>Científica
+  </div>
+  <div class="nav-item" onclick="showTab('fisica')">
+    <span>⚛️</span>Física
+  </div>
+  <div class="nav-item" onclick="showTab('quimica')">
+    <span>🧪</span>Química
+  </div>
+  <div class="nav-item" onclick="showTab('solar')">
+    <span>☀️</span>Solar
+  </div>
+  <div class="nav-item" onclick="showTab('motores')">
+    <span>⚡</span>Motores
+  </div>
+</nav>
+
+<script>
+  // ========== NAVEGACIÓN ==========
+  function showTab(id) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+  }
+
+  function showFisica(n) {
+    for (let i = 0; i < 4; i++) {
+      document.getElementById('fisica-' + i).style.display = i === n ? 'block' : 'none';
+    }
+    document.querySelectorAll('#fisica .tab-btn').forEach((b, i) => {
+      b.classList.toggle('active', i === n);
+    });
+  }
+
+  function showQuimica(n) {
+    for (let i = 0; i < 3; i++) {
+      document.getElementById('quim-' + i).style.display = i === n ? 'block' : 'none';
+    }
+    document.querySelectorAll('#quimica .tab-btn').forEach((b, i) => {
+      b.classList.toggle('active', i === n);
+    });
+  }
+
+  // ========== CALCULADORA CIENTÍFICA ==========
+  let display = document.getElementById('display');
+  let current = '0';
+  let operand = null;
+  let operator = null;
+  let resetNext = false;
+
+  const buttons = [
+    'C','±','%','÷',
+    'sin','cos','tan','×',
+    'log','ln','√','-',
+    '7','8','9','+',
+    '4','5','6','^',
+    '1','2','3','x²',
+    '0','.','=','1/x'
+  ];
+
+  const container = document.getElementById('calc-buttons');
+  buttons.forEach(b => {
+    const btn = document.createElement('button');
+    btn.className = 'btn';
+    if (['÷','×','-','+','^','='].includes(b)) btn.classList.add('op');
+    if (b === 'C') btn.classList.add('clear');
+    if (b === '=') btn.classList.add('eq');
+    btn.textContent = b;
+    btn.onclick = () => press(b);
+    container.appendChild(btn);
+  });
+
+  function updateDisplay() {
+    display.textContent = current;
+  }
+
+  function press(btn) {
+    if (btn === 'C') {
+      current = '0'; operand = null; operator = null; resetNext = false;
+    } else if (btn === '±') {
+      current = (parseFloat(current) * -1).toString();
+    } else if (btn === '%') {
+      current = (parseFloat(current) / 100).toString();
+    } else if (['sin','cos','tan','log','ln','√','x²','1/x'].includes(btn)) {
+      let v = parseFloat(current);
+      let r;
+      if (btn === 'sin') r = Math.sin(v * Math.PI / 180);
+      if (btn === 'cos') r = Math.cos(v * Math.PI / 180);
+      if (btn === 'tan') r = Math.tan(v * Math.PI / 180);
+      if (btn === 'log') r = Math.log10(v);
+      if (btn === 'ln') r = Math.log(v);
+      if (btn === '√') r = Math.sqrt(v);
+      if (btn === 'x²') r = v * v;
+      if (btn === '1/x') r = 1 / v;
+      current = r.toString();
+      resetNext = true;
+    } else if (['+','-','×','÷','^'].includes(btn)) {
+      if (operator && !resetNext) equal();
+      operand = parseFloat(current);
+      operator = btn;
+      resetNext = true;
+    } else if (btn === '=') {
+      equal();
+    } else {
+      if (resetNext) { current = btn === '.' ? '0.' : btn; resetNext = false; }
+      else {
+        if (btn === '.' && current.includes('.')) return;
+        current = current === '0' && btn !== '.' ? btn : current + btn;
+      }
+    }
+    updateDisplay();
+  }
+
+  function equal() {
+    if (operator === null) return;
+    let b = parseFloat(current);
+    let r;
+    if (operator === '+') r = operand + b;
+    if (operator === '-') r = operand - b;
+    if (operator === '×') r = operand * b;
+    if (operator === '÷') r = b === 0 ? NaN : operand / b;
+    if (operator === '^') r = Math.pow(operand, b);
+    current = isNaN(r) ? 'Error' : r.toString();
+    operator = null;
+    resetNext = true;
+  }
+
+  // ========== FÍSICA ==========
+  function calcCinematica() {
+    const v0 = parseFloat(document.getElementById('v0').value) || 0;
+    const a = parseFloat(document.getElementById('a').value) || 0;
+    const t = parseFloat(document.getElementById('t').value) || 0;
+    const res = document.getElementById('res-cin');
+    res.style.display = 'block';
+    res.textContent = `Velocidad final: ${(v0 + a * t).toFixed(3)} m/s`;
+  }
+
+  function calcEnergia() {
+    const m = parseFloat(document.getElementById('masa').value) || 0;
+    const v = parseFloat(document.getElementById('vel').value) || 0;
+    const h = parseFloat(document.getElementById('altura').value) || 0;
+    const ec = 0.5 * m * v * v;
+    const ep = m * 9.81 * h;
+    const res = document.getElementById('res-ene');
+    res.style.display = 'block';
+    res.textContent = `Ec = ${ec.toFixed(2)} J\nEp = ${ep.toFixed(2)} J\nTotal = ${(ec + ep).toFixed(2)} J`;
+  }
+
+  function calcOhm() {
+    const v = parseFloat(document.getElementById('volt').value) || 0;
+    const r = parseFloat(document.getElementById('resis').value) || 1;
+    const i = v / r;
+    const p = v * i;
+    const res = document.getElementById('res-ohm');
+    res.style.display = 'block';
+    res.textContent = `Corriente: ${i.toFixed(3)} A\nPotencia: ${p.toFixed(2)} W`;
+  }
+
+  function calcOnda() {
+    const f = parseFloat(document.getElementById('freq').value) || 0;
+    const l = parseFloat(document.getElementById('lambda').value) || 0;
+    const res = document.getElementById('res-onda');
+    res.style.display = 'block';
+    res.textContent = `Velocidad de la onda: ${(f * l).toFixed(3)} m/s`;
+  }
+
+  // ========== QUÍMICA ==========
+  function calcMolaridad() {
+    const n = parseFloat(document.getElementById('moles').value) || 0;
+    const v = parseFloat(document.getElementById('volumen').value) || 1;
+    const res = document.getElementById('res-mol');
+    res.style.display = 'block';
+    res.textContent = `Molaridad: ${(n / v).toFixed(4)} mol/L`;
+  }
+
+  function calcGases() {
+    const p = document.getElementById('p').value;
+    const v = document.getElementById('vgas').value;
+    const n = document.getElementById('ngas').value;
+    const t = document.getElementById('temp').value;
+    const R = 0.0821;
+    let msg = '';
+    if (!p && v && n && t) msg = `P = ${((n * R * t) / v).toFixed(4)} atm`;
+    else if (!v && p && n && t) msg = `V = ${((n * R * t) / p).toFixed(4)} L`;
+    else if (!n && p && v && t) msg = `n = ${((p * v) / (R * t)).toFixed(4)} mol`;
+    else if (!t && p && v && n) msg = `T = ${((p * v) / (n * R)).toFixed(2)} K`;
+    else msg = 'Completá exactamente 3 valores';
+    const res = document.getElementById('res-gas');
+    res.style.display = 'block';
+    res.textContent = msg;
+  }
+
+  function calcPH() {
+    const c = parseFloat(document.getElementById('hplus').value) || 1;
+    const res = document.getElementById('res-ph');
+    res.style.display = 'block';
+    res.textContent = `pH = ${(-Math.log10(c)).toFixed(3)}`;
+  }
+
+  // ========== SOLAR ==========
+  function calcSolar() {
+    const cons = parseFloat(document.getElementById('consumo').value) || 0;
+    const hsp = parseFloat(document.getElementById('hsp').value) || 4.5;
+    const pot = parseFloat(document.getElementById('potpanel').value) || 450;
+    const dias = parseFloat(document.getElementById('autonomia').value) || 2;
+    const dod = (parseFloat(document.getElementById('dod').value) || 50) / 100;
+    const v = parseFloat(document.getElementById('tension').value) || 48;
+
+    const energiaNec = cons * 1.3;
+    const potTotal = energiaNec / hsp;
+    const paneles = Math.max(1, Math.ceil((potTotal * 1000) / pot));
+    const energiaBat = cons * dias / dod;
+    const ah = (energiaBat * 1000) / v;
+
+    const res = document.getElementById('res-solar');
+    res.style.display = 'block';
+    res.textContent = `🔹 Potencia total: ${potTotal.toFixed(2)} kW
+🔹 Cantidad de paneles: ${paneles}
+🔹 Capacidad batería: ${ah.toFixed(0)} Ah a ${v} V
+🔹 Energía batería: ${energiaBat.toFixed(2)} kWh`;
+  }
+
+  // ========== MOTORES ==========
+  function calcMotor() {
+    const tipo = parseInt(document.getElementById('tipo').value);
+    const m = parseFloat(document.getElementById('peso').value) || 0;
+    const vmax = (parseFloat(document.getElementById('velmax').value) || 0) / 3.6;
+    const a = parseFloat(document.getElementById('acel').value) || 1.5;
+    const pend = (parseFloat(document.getElementById('pend').value) || 0) / 100;
+    const eff = (parseFloat(document.getElementById('efic').value) || 85) / 100;
+
+    const g = 9.81;
+    const fAcel = m * a;
+    const fPend = m * g * pend;
+    const fRod = m * g * 0.015;
+    const fTotal = fAcel + fPend + fRod;
+
+    const potMec = fTotal * vmax;
+    const potElec = potMec / eff;
+    const torque = vmax > 0 ? potMec / vmax : 0;
+
+    const voltajes = [36, 48, 400, 600, 750];
+    const volt = voltajes[tipo];
+    const corriente = potElec / volt;
+
+    const res = document.getElementById('res-motor');
+    res.style.display = 'block';
+    res.textContent = `⚡ Potencia mecánica: ${(potMec/1000).toFixed(2)} kW
+⚡ Potencia eléctrica: ${(potElec/1000).toFixed(2)} kW
+🔧 Torque estimado: ${torque.toFixed(1)} N·m
+🔋 Voltaje recomendado: ${volt} V
+🔌 Corriente estimada: ${corriente.toFixed(1)} A`;
+  }
+</script>
+</body>
+</html>
